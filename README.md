@@ -5,6 +5,10 @@ Spectate LoL games
 1. `pip install pip-tools`
 2. `pip-sync`
 
+## Usage
+1. Get developer API key from https://developer.riotgames.com/.
+2. `python spectate.py API_KEY PLATFORM_ID SUMMONER_NAME`
+
 ## Development
 
 ### Update Requiremnets
