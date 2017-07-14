@@ -7,7 +7,7 @@ Spectate LoL games
 
 ## Usage
 1. Get developer API key from https://developer.riotgames.com/.
-2. `python spectate.py API_KEY PLATFORM_ID SUMMONER_NAME`
+2. `python spectate.py INSTALL_PATH API_KEY PLATFORM_ID SUMMONER_NAME`
 
 ## Development
 

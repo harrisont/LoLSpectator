@@ -1,12 +1,11 @@
 import argparse
 from collections import namedtuple
 import os
+import pathlib
 import subprocess
 
 import requests
 
-
-_INSTALL_PATH = 'C:/Games/League of Legends'
 
 _SPECTATOR_HOST_BY_PLATFORM = {
     'NA1': 'spectator.na.lol.riotgames.com:80',
@@ -67,9 +66,9 @@ def _get_spectate_info(api_key: str, platform_id: str, summoner_id: int) -> _Spe
                              encryption_key=data['observers']['encryptionKey'])
 
 
-def _spectate(spectate_info: _SpectateGameInfo) -> None:
+def _spectate(spectate_info: _SpectateGameInfo, install_path: pathlib.Path) -> None:
     # TODO: Get from discovering release path
-    lol_exe_dir = os.path.join(_INSTALL_PATH, 'RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy')
+    lol_exe_dir = os.path.join(install_path, 'RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy')
     spectator_host = _SPECTATOR_HOST_BY_PLATFORM[spectate_info.platform_id]
     command_line_args = [
         os.path.join(lol_exe_dir, 'League of Legends.exe'),
@@ -82,7 +81,7 @@ def _spectate(spectate_info: _SpectateGameInfo) -> None:
     subprocess.run(command_line_args, cwd=lol_exe_dir, check=True)
 
 
-def _spectate_by_summoner(api_key: str, platform_id, summoner_name):
+def _spectate_by_summoner(api_key: str, platform_id, summoner_name, install_path: pathlib.Path):
     try:
         summoner_id = _get_summoner_id(api_key, platform_id, summoner_name)
     except SummonerDoesNotExist as error:
@@ -94,17 +93,18 @@ def _spectate_by_summoner(api_key: str, platform_id, summoner_name):
     except NotInGameError:
         print(f'{summoner_name} is not in game')
         return
-    _spectate(spectate_info)
+    _spectate(spectate_info, install_path)
 
 
 def _main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('install_path', help='Path of your LoL install. For example, "C:/Games/League of Legends".')
     parser.add_argument('api_key', help='Developer API key from https://developer.riotgames.com/')
     parser.add_argument('platform_id', choices=_SPECTATOR_HOST_BY_PLATFORM.keys(), help='Platform ID')
     parser.add_argument('summoner_name', help='Summoner name')
     args = parser.parse_args()
 
-    _spectate_by_summoner(args.api_key, args.platform_id, args.summoner_name)
+    _spectate_by_summoner(args.api_key, args.platform_id, args.summoner_name, args.install_path)
     
 
 if __name__ == '__main__':
