@@ -1,6 +1,5 @@
 import argparse
 from collections import namedtuple
-import os
 from pathlib import Path
 import subprocess
 
@@ -66,22 +65,25 @@ def _get_spectate_info(api_key: str, platform_id: str, summoner_id: int) -> _Spe
                              encryption_key=data['observers']['encryptionKey'])
 
 
-def _get_lol_exe_dir(install_path) -> Path:
-    return os.path.join(install_path, 'RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy')
+def _get_lol_exe_dir(install_path: Path) -> Path:
+    game_releases_dir = install_path / 'RADS/solutions/lol_game_client_sln/releases'
+    release_dir = next(iter(game_releases_dir.iterdir()))
+    return release_dir / 'deploy'
 
 
 def _spectate(spectate_info: _SpectateGameInfo, install_path: Path) -> None:
     lol_exe_dir = _get_lol_exe_dir(install_path)
+    print(lol_exe_dir)
     spectator_host = _SPECTATOR_HOST_BY_PLATFORM[spectate_info.platform_id]
     command_line_args = [
-        os.path.join(lol_exe_dir, 'League of Legends.exe'),
+        str(lol_exe_dir / 'League of Legends.exe'),
         '8394',  # Deprecated Maestro parameter
         'DefinitelyNotLeagueClient.exe',  # Deprecated Maestro Parameter
         '/this/path/is/bogus/but/the/game/doesnt/care',
         f'spectator {spectator_host} {spectate_info.encryption_key} {spectate_info.game_id} {spectate_info.platform_id}',
         '-UseRads',
     ]
-    subprocess.run(command_line_args, cwd=lol_exe_dir, check=True)
+    subprocess.run(command_line_args, cwd=str(lol_exe_dir), check=True)
 
 
 def _spectate_by_summoner(api_key: str, platform_id, summoner_name, install_path: Path):
@@ -101,7 +103,7 @@ def _spectate_by_summoner(api_key: str, platform_id, summoner_name, install_path
 
 def _main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('install_path', help='Path of your LoL install. For example, "C:/Games/League of Legends".')
+    parser.add_argument('install_path', type=Path, help='Path of your LoL install. For example, "C:/Games/League of Legends".')
     parser.add_argument('api_key', help='Developer API key from https://developer.riotgames.com/')
     parser.add_argument('platform_id', choices=_SPECTATOR_HOST_BY_PLATFORM.keys(), help='Platform ID')
     parser.add_argument('summoner_name', help='Summoner name')
