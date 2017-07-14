@@ -86,16 +86,19 @@ def _spectate(spectate_info: _SpectateGameInfo) -> None:
 
 def _main():
     platform_id = 'NA1'
-    summoner_name = 'SlayerSBoxeR1'  #'Voyboy'
-
-    summoner_id = _get_summoner_id(platform_id, summoner_name)
-    try:
-        spectate_info: _SpectateGameInfo = _get_spectate_info(platform_id, summoner_id)
-    except NotInGameError:
-        print(f'{summoner_name} is not in game')
-        return
-
-    _spectate(spectate_info)
+    summoner_names = [
+        'Failright',
+        'SlayerSBoxeR1',
+        'Voyboy',
+    ]
+    for summoner_name in summoner_names:
+        summoner_id = _get_summoner_id(platform_id, summoner_name)
+        try:
+            spectate_info: _SpectateGameInfo = _get_spectate_info(platform_id, summoner_id)
+        except NotInGameError:
+            print(f'{summoner_name} is not in game')
+            continue
+        _spectate(spectate_info)
     
 
 if __name__ == '__main__':
