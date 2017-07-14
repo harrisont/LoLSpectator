@@ -65,15 +65,14 @@ def _get_spectate_info(platform_id: str, summoner_id: int) -> _SpectateGameInfo:
 
 
 def _spectate(spectate_info: _SpectateGameInfo) -> None:
-    # cd "C:\Riot Games\League of Legends\RADS\solutions\lol_game_client_sln\releases\0.0.1.148\deploy\"
-
     spectator_host = _SPECTATOR_HOST_BY_PLATFORM[spectate_info.platform_id]
     command_line_args = [
-        'League of Legends.exe',
-        8394,  # Maestro parameter
-        'LoLLauncher.exe',  # Maestro Parameter
+        'C:/Games/League of Legends/RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy/League of Legends.exe',
+        8394,  # Deprecated Maestro parameter
+        'DefinitelyNotLeagueClient.exe',  # Deprecated Maestro Parameter
         '',  # Intentionally empty
-        f'spectator {spectator_host} {spectate_info.encryption_key} {spectate_info.game_id} {spectate_info.platform_id}'
+        f'spectator {spectator_host} {spectate_info.encryption_key} {spectate_info.game_id} {spectate_info.platform_id}',
+        '-UseRads',
     ]
 
     print(command_line_args)
