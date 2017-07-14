@@ -39,7 +39,7 @@ def _get_summoner_id(api_key: str, platform_id: str, summoner_name: str) -> int:
     # https://developer.riotgames.com/api-methods/#summoner-v3/GET_getBySummonerName
     result = requests.get(f'https://{_get_api_host(platform_id)}/lol/summoner/v3/summoners/by-name/{summoner_name}', params={'api_key': api_key})
     if result.status_code == 404:
-        raise SummonerDoesNotExist(f'No summoner with name {summoner_name} found on platform {platform_id}')
+        raise SummonerDoesNotExist(f'No summoner with name "{summoner_name}" found on platform {platform_id}')
     result.raise_for_status()
     data = result.json()
     return data['id']
@@ -83,7 +83,12 @@ def _spectate(spectate_info: _SpectateGameInfo) -> None:
 
 
 def _spectate_by_summoner(api_key: str, platform_id, summoner_name):
-    summoner_id = _get_summoner_id(api_key, platform_id, summoner_name)
+    try:
+        summoner_id = _get_summoner_id(api_key, platform_id, summoner_name)
+    except SummonerDoesNotExist as error:
+        print(error)
+        return
+
     try:
         spectate_info = _get_spectate_info(api_key, platform_id, summoner_id)
     except NotInGameError:
@@ -95,11 +100,11 @@ def _spectate_by_summoner(api_key: str, platform_id, summoner_name):
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument('api_key', help='Developer API key from https://developer.riotgames.com/')
-    parser.add_argument('platform_id', help='Platform ID (e.g. NA1)')
+    parser.add_argument('platform_id', choices=_SPECTATOR_HOST_BY_PLATFORM.keys(), help='Platform ID')
     parser.add_argument('summoner_name', help='Summoner name')
     args = parser.parse_args()
 
-    _spectate_by_summoner(args.api_key, args.platform_id.upper(), args.summoner_name)
+    _spectate_by_summoner(args.api_key, args.platform_id, args.summoner_name)
     
 
 if __name__ == '__main__':
