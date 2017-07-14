@@ -1,21 +1,42 @@
-from typing import Dict
+from collections import namedtuple
 
 import requests
 
 # From https://developer.riotgames.com/
-_PLATFORM_ID = 'NA1'
-_SUMMONER_NAME = 'Rioting'
 _API_KEY = 'RGAPI-70214411-99f0-4b0f-a4d5-2afa63f09a6a'
+
+_SPECTATOR_HOST_BY_PLATFORM = {
+    'NA1': 'spectator.na.lol.riotgames.com:80',
+    'EUW1': 'spectator.euw1.lol.riotgames.com:80',
+    'EUN1': 'spectator.eu.lol.riotgames.com:8088',
+    'JP1': 'spectator.jp1.lol.riotgames.com:80',
+    'KR': 'spectator.kr.lol.riotgames.com:80',
+    'OC1': 'spectator.oc1.lol.riotgames.com:80',
+    'BR1': 'spectator.br.lol.riotgames.com:80',
+    'LA1': 'spectator.la1.lol.riotgames.com:80',
+    'LA2': 'spectator.la2.lol.riotgames.com:80',
+    'RU': 'spectator.ru.lol.riotgames.com:80',
+    'TR1': 'spectator.tr.lol.riotgames.com:80',
+    'PBE1': 'spectator.pbe1.lol.riotgames.com:8088',
+}
+
+
+def _get_api_host(platform_id: str):
+    return f'{platform_id}.api.riotgames.com'
 
 
 class SummonerDoesNotExist(Exception):
     pass
 
 
-def _get_summoner_id() -> int:
-    result = requests.get(f'https://{_PLATFORM_ID}.api.riotgames.com/lol/summoner/v3/summoners/by-name/{_SUMMONER_NAME}', params={'api_key': _API_KEY})
+def _get_summoner_id(platform_id: str, summoner_name: str) -> int:
+    """
+    Raises SummonerDoesNotExist if there is no summer with that name.
+    """
+    # https://developer.riotgames.com/api-methods/#summoner-v3/GET_getBySummonerName
+    result = requests.get(f'https://{_get_api_host(platform_id)}/lol/summoner/v3/summoners/by-name/{summoner_name}', params={'api_key': _API_KEY})
     if result.status_code == 404:
-        raise SummonerDoesNotExist(f'No summoner with name {_SUMMONER_NAME} found on platform {_PLATFORM_ID}')
+        raise SummonerDoesNotExist(f'No summoner with name {summoner_name} found on platform {platform_id}')
     result.raise_for_status()
     data = result.json()
     return data['id']
@@ -25,26 +46,51 @@ class NotInGameError(Exception):
     pass
 
 
-def _get_spectator_game_info(summoner_id: int) -> Dict:
-    result = requests.get(f'https://{_PLATFORM_ID}.api.riotgames.com/observer-mode/rest/consumer/getSpectatorGameInfo/{_PLATFORM_ID}/{summoner_id}', params={'api_key': _API_KEY})
+_SpectateGameInfo = namedtuple('SpectateGameInfo', ['platform_id', 'game_id', 'encryption_key'])
+
+
+def _get_spectate_info(platform_id: str, summoner_id: int) -> _SpectateGameInfo:
+    """
+    Raises NotInGameError if the player is not currently in game.
+    """
+    # https://developer.riotgames.com/api-methods/#spectator-v3/GET_getCurrentGameInfoBySummoner
+    result = requests.get(f'https://{_get_api_host(platform_id)}/lol/spectator/v3/active-games/by-summoner/{summoner_id}', params={'api_key': _API_KEY})
     if result.status_code == 404:
-        raise NotInGameError(f'No summoner with ID {summoner_id} found on platform {_PLATFORM_ID}')
+        raise NotInGameError(f'Summoner with ID {summoner_id} on platform {platform_id} is not in game')
     result.raise_for_status()
     data = result.json()
-    return data
+    return _SpectateGameInfo(platform_id=platform_id,
+                             game_id=data['gameId'],
+                             encryption_key=data['observers']['encryptionKey'])
 
 
-def _spectate():
-    summoner_id = _get_summoner_id()
-    try:
-        data = _get_spectator_game_info(summoner_id)
-        print(data)
-    except NotInGameError:
-        print('Not in game')
+def _spectate(spectate_info: _SpectateGameInfo) -> None:
+    # cd "C:\Riot Games\League of Legends\RADS\solutions\lol_game_client_sln\releases\0.0.1.148\deploy\"
+
+    spectator_host = _SPECTATOR_HOST_BY_PLATFORM[spectate_info.platform_id]
+    command_line_args = [
+        'League of Legends.exe',
+        8394,  # Maestro parameter
+        'LoLLauncher.exe',  # Maestro Parameter
+        '',  # Intentionally empty
+        f'spectator {spectator_host} {spectate_info.encryption_key} {spectate_info.game_id} {spectate_info.platform_id}'
+    ]
+
+    print(command_line_args)
 
 
 def _main():
-    _spectate()
+    platform_id = 'NA1'
+    summoner_name = 'Voyboy'
+
+    summoner_id = _get_summoner_id(platform_id, summoner_name)
+    try:
+        spectate_info: _SpectateGameInfo = _get_spectate_info(platform_id, summoner_id)
+    except NotInGameError:
+        print(f'{summoner_name} is not in game')
+        return
+
+    _spectate(spectate_info)
     
 
 if __name__ == '__main__':
