@@ -1,0 +1,2 @@
+# LoLSpectator
+Spectate LoL games
