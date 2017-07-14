@@ -1,7 +1,7 @@
 import argparse
 from collections import namedtuple
 import os
-import pathlib
+from pathlib import Path
 import subprocess
 
 import requests
@@ -66,9 +66,12 @@ def _get_spectate_info(api_key: str, platform_id: str, summoner_id: int) -> _Spe
                              encryption_key=data['observers']['encryptionKey'])
 
 
-def _spectate(spectate_info: _SpectateGameInfo, install_path: pathlib.Path) -> None:
-    # TODO: Get from discovering release path
-    lol_exe_dir = os.path.join(install_path, 'RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy')
+def _get_lol_exe_dir(install_path) -> Path:
+    return os.path.join(install_path, 'RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy')
+
+
+def _spectate(spectate_info: _SpectateGameInfo, install_path: Path) -> None:
+    lol_exe_dir = _get_lol_exe_dir(install_path)
     spectator_host = _SPECTATOR_HOST_BY_PLATFORM[spectate_info.platform_id]
     command_line_args = [
         os.path.join(lol_exe_dir, 'League of Legends.exe'),
@@ -81,7 +84,7 @@ def _spectate(spectate_info: _SpectateGameInfo, install_path: pathlib.Path) -> N
     subprocess.run(command_line_args, cwd=lol_exe_dir, check=True)
 
 
-def _spectate_by_summoner(api_key: str, platform_id, summoner_name, install_path: pathlib.Path):
+def _spectate_by_summoner(api_key: str, platform_id, summoner_name, install_path: Path):
     try:
         summoner_id = _get_summoner_id(api_key, platform_id, summoner_name)
     except SummonerDoesNotExist as error:
