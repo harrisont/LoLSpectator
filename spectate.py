@@ -1,6 +1,11 @@
 from collections import namedtuple
+import os
+import subprocess
 
 import requests
+
+
+_INSTALL_PATH = 'C:/Games/League of Legends'
 
 # From https://developer.riotgames.com/
 _API_KEY = 'RGAPI-70214411-99f0-4b0f-a4d5-2afa63f09a6a'
@@ -65,22 +70,23 @@ def _get_spectate_info(platform_id: str, summoner_id: int) -> _SpectateGameInfo:
 
 
 def _spectate(spectate_info: _SpectateGameInfo) -> None:
+    # TODO: Get from discovering release path
+    lol_exe_dir = os.path.join(_INSTALL_PATH, 'RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy')
     spectator_host = _SPECTATOR_HOST_BY_PLATFORM[spectate_info.platform_id]
     command_line_args = [
-        'C:/Games/League of Legends/RADS/solutions/lol_game_client_sln/releases/0.0.1.181/deploy/League of Legends.exe',
-        8394,  # Deprecated Maestro parameter
+        'League of Legends.exe',
+        '8394',  # Deprecated Maestro parameter
         'DefinitelyNotLeagueClient.exe',  # Deprecated Maestro Parameter
-        '',  # Intentionally empty
+        '""',  # Intentionally empty
         f'spectator {spectator_host} {spectate_info.encryption_key} {spectate_info.game_id} {spectate_info.platform_id}',
         '-UseRads',
     ]
-
-    print(command_line_args)
+    subprocess.run(command_line_args, cwd=lol_exe_dir, check=True)
 
 
 def _main():
     platform_id = 'NA1'
-    summoner_name = 'Voyboy'
+    summoner_name = 'SlayerSBoxeR1'  #'Voyboy'
 
     summoner_id = _get_summoner_id(platform_id, summoner_name)
     try:
