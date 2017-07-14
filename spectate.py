@@ -77,11 +77,16 @@ def _spectate(spectate_info: _SpectateGameInfo) -> None:
         'League of Legends.exe',
         '8394',  # Deprecated Maestro parameter
         'DefinitelyNotLeagueClient.exe',  # Deprecated Maestro Parameter
-        '""',  # Intentionally empty
+        '/this/path/is/bogus/but/the/game/doesnt/care',
         f'spectator {spectator_host} {spectate_info.encryption_key} {spectate_info.game_id} {spectate_info.platform_id}',
         '-UseRads',
     ]
-    subprocess.run(command_line_args, cwd=lol_exe_dir, check=True)
+
+    #subprocess.run(command_line_args, cwd=lol_exe_dir, check=True)
+    os.chdir(lol_exe_dir)
+    cmd = ' '.join([f'"{arg}"' for arg in command_line_args])
+    print(cmd)
+    subprocess.call(cmd, shell=True)
 
 
 def _main():
@@ -91,14 +96,19 @@ def _main():
         'SlayerSBoxeR1',
         'Voyboy',
     ]
+    spectate_info: _SpectateGameInfo = None
     for summoner_name in summoner_names:
         summoner_id = _get_summoner_id(platform_id, summoner_name)
         try:
-            spectate_info: _SpectateGameInfo = _get_spectate_info(platform_id, summoner_id)
+            spectate_info = _get_spectate_info(platform_id, summoner_id)
+            break
         except NotInGameError:
             print(f'{summoner_name} is not in game')
-            continue
-        _spectate(spectate_info)
+
+    if not spectate_info:
+        return
+
+    _spectate(spectate_info)
     
 
 if __name__ == '__main__':
